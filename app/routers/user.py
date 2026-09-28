@@ -1,14 +1,20 @@
-from fastapi import APIRouter, Depends , HTTPException, status
+from fastapi import APIRouter, Depends , HTTPException, status , BackgroundTasks
 from app.schemes.user import UserCreate, UserResponse, UserLogin, UserUpdate
 from app.database import get_db
 from app.models.user_model import User
 from sqlalchemy.orm import Session
 from app.security import hash_password, verify_password, create_access_token, create_refresh_token, get_current_user, require_admin
 from typing import List
+import time
 
 router = APIRouter(prefix='/user', tags=['users'])
+def send_welcome_email(email: str):
+    print(f'Sending welcome email to {email}')
+    time.sleep(3)
+    print(f'Email sent to {email}')
+
 @router.post('/register', response_model= UserResponse, status_code= status.HTTP_201_CREATED)
-def create_user(user : UserCreate, db : Session = Depends(get_db)):
+def create_user(user : UserCreate, background_tasks: BackgroundTasks, db : Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail = 'there is existing account with this email')
@@ -21,6 +27,9 @@ def create_user(user : UserCreate, db : Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    background_tasks.add_task(send_welcome_email, new_user.email)
+    
     return new_user
 
 @router.post('/login')
