@@ -16,6 +16,7 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: EmailStr
+    role: str
     registered_at: datetime
     
     class Config:
@@ -23,5 +24,8 @@ class UserResponse(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
 
 
